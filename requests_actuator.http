@@ -1,0 +1,290 @@
+### Variáveis de Ambiente para Actuator
+@baseUrl = http://localhost:8080
+@accept = application/json
+
+###============================================
+### ACTUATOR E MÉTRICAS - ENDPOINTS
+###============================================
+
+###============================================
+### 1️⃣ HEALTH CHECK - Status da Aplicação
+###============================================
+GET {{baseUrl}}/actuator/health
+Accept: {{accept}}
+
+> {%
+  if (response.status === 200) {
+    let health = response.body;
+    client.log("✓ Aplicação Status: " + health.status);
+    client.log("  Components: " + Object.keys(health.components).join(", "));
+  }
+%}
+
+###============================================
+### 2️⃣ LISTA DE MÉTRICAS DISPONÍVEIS
+###============================================
+GET {{baseUrl}}/actuator/metrics
+Accept: {{accept}}
+
+> {%
+  let metrics = response.body;
+  client.log("✓ Total de métricas: " + metrics.names.length);
+  client.log("  Primeiras 5: " + metrics.names.slice(0, 5).join(", "));
+%}
+
+###============================================
+### 3️⃣ MÉTRICA - JVM Memory Used
+###============================================
+GET {{baseUrl}}/actuator/metrics/jvm.memory.used
+Accept: {{accept}}
+
+> {%
+  let memory = response.body;
+  let memoryBytes = memory.measurements[0].value;
+  let memoryMB = (memoryBytes / 1048576).toFixed(2);
+  client.log("✓ Memória JVM Usada: " + memoryMB + " MB");
+  client.log("  Valor em bytes: " + memoryBytes);
+%}
+
+###============================================
+### 4️⃣ MÉTRICA - JVM Memory Heap
+###============================================
+GET {{baseUrl}}/actuator/metrics/jvm.memory.used?tag=area:heap
+Accept: {{accept}}
+
+> {%
+  let memory = response.body;
+  if (memory.measurements && memory.measurements.length > 0) {
+    let memoryBytes = memory.measurements[0].value;
+    let memoryMB = (memoryBytes / 1048576).toFixed(2);
+    client.log("✓ Memória Heap Usada: " + memoryMB + " MB");
+  }
+%}
+
+###============================================
+### 5️⃣ MÉTRICA - Process CPU Usage
+###============================================
+GET {{baseUrl}}/actuator/metrics/process.cpu.usage
+Accept: {{accept}}
+
+> {%
+  let cpu = response.body;
+  let cpuUsage = cpu.measurements[0].value * 100;
+  client.log("✓ Uso de CPU: " + cpuUsage.toFixed(2) + "%");
+%}
+
+###============================================
+### 6️⃣ MÉTRICA - Process Uptime
+###============================================
+GET {{baseUrl}}/actuator/metrics/process.uptime
+Accept: {{accept}}
+
+> {%
+  let uptime = response.body;
+  let uptimeSeconds = uptime.measurements[0].value;
+  let uptimeMinutes = (uptimeSeconds / 60).toFixed(2);
+  let uptimeHours = (uptimeSeconds / 3600).toFixed(2);
+  client.log("✓ Uptime do Processo:");
+  client.log("  " + uptimeSeconds.toFixed(0) + " segundos");
+  client.log("  " + uptimeMinutes + " minutos");
+  client.log("  " + uptimeHours + " horas");
+%}
+
+###============================================
+### 7️⃣ MÉTRICA - JVM Threads Live
+###============================================
+GET {{baseUrl}}/actuator/metrics/jvm.threads.live
+Accept: {{accept}}
+
+> {%
+  let threads = response.body;
+  let liveThreads = threads.measurements[0].value;
+  client.log("✓ Threads Ativas: " + liveThreads);
+%}
+
+###============================================
+### 8️⃣ MÉTRICA - Cache Gets Hit
+###============================================
+GET {{baseUrl}}/actuator/metrics/cache.gets.hit
+Accept: {{accept}}
+
+> {%
+  let cacheHit = response.body;
+  if (cacheHit.measurements && cacheHit.measurements.length > 0) {
+    let hits = cacheHit.measurements[0].value;
+    client.log("✓ Cache Hits: " + hits);
+  } else {
+    client.log("ℹ Nenhum cache hit registrado ainda");
+  }
+%}
+
+###============================================
+### 9️⃣ MÉTRICA - Cache Gets Miss
+###============================================
+GET {{baseUrl}}/actuator/metrics/cache.gets.miss
+Accept: {{accept}}
+
+> {%
+  let cacheMiss = response.body;
+  if (cacheMiss.measurements && cacheMiss.measurements.length > 0) {
+    let misses = cacheMiss.measurements[0].value;
+    client.log("✓ Cache Misses: " + misses);
+  } else {
+    client.log("ℹ Nenhum cache miss registrado ainda");
+  }
+%}
+
+###============================================
+### 🔟 CACHES - Informações de Todos os Caches
+###============================================
+GET {{baseUrl}}/actuator/caches
+Accept: {{accept}}
+
+> {%
+  let caches = response.body;
+  client.log("✓ Cache Managers: " + JSON.stringify(caches.cacheManagers, null, 2));
+%}
+
+###============================================
+### 1️⃣1️⃣ PROMETHEUS FORMAT - Todas as Métricas
+###============================================
+GET {{baseUrl}}/actuator/prometheus
+Accept: text/plain
+
+> {%
+  let lines = response.body.split('\n');
+  let metricLines = lines.filter(line => !line.startsWith('#') && line.trim() !== '');
+  client.log("✓ Total de métricas (linhas): " + metricLines.length);
+  client.log("  Primeiras 5 linhas:");
+  metricLines.slice(0, 5).forEach(line => client.log("  " + line));
+%}
+
+###============================================
+### 🔧 CUSTOM - Métricas de Cache Customizadas
+###============================================
+GET {{baseUrl}}/api/v1/metrics/cache
+Accept: {{accept}}
+
+> {%
+  let custom = response.body;
+  client.log("✓ Cache Manager Type: " + custom.cache_manager_type);
+  client.log("  Cache Names: " + custom.cache_names.join(", "));
+  client.log("  Total de Métricas: " + custom.metrics.total_metrics);
+  client.log("  Redis Habilitado: " + custom.metrics.cache_config.redis_enabled);
+%}
+
+###============================================
+### 🛡️ CUSTOM - Status do Redis
+###============================================
+GET {{baseUrl}}/api/v1/metrics/redis
+Accept: {{accept}}
+
+> {%
+  let redis = response.body;
+  client.log("✓ Redis Status: " + redis.redis_status);
+  client.log("  Tipo: " + redis.cache_type);
+  client.log("  Host: " + redis.configuration.host);
+  client.log("  Port: " + redis.configuration.port);
+  client.log("  Caches Disponíveis: " + redis.available_caches.join(", "));
+%}
+
+###============================================
+### 📊 TESTE COMPLETO - Workflow Completo
+###============================================
+
+### Passo 1: Fazer requisição na API para gerar cache
+POST {{baseUrl}}/api/v1/users
+Content-Type: {{accept}}
+
+{
+  "email": "metrics.test@example.com",
+  "firstName": "Metrics",
+  "lastName": "Test",
+  "password": "MetricsTest123"
+}
+
+> {%
+  let userId = response.body.id;
+  client.global.set("metricsTestUserId", userId);
+  client.log("✓ Usuário criado para teste: " + userId);
+%}
+
+###
+
+### Passo 2: Listar usuários (vai gerar cache hits)
+GET {{baseUrl}}/api/v1/users
+Accept: {{accept}}
+
+###
+
+### Passo 3: Verificar health após operações
+GET {{baseUrl}}/actuator/health
+Accept: {{accept}}
+
+###
+
+### Passo 4: Ver cache metrics após operações
+GET {{baseUrl}}/actuator/metrics/cache.gets.hit
+Accept: {{accept}}
+
+###
+
+### Passo 5: Ver status customizado
+GET {{baseUrl}}/api/v1/metrics/cache
+Accept: {{accept}}
+
+###============================================
+### 🧪 BATCH - Todos os Stats em Um Go
+###============================================
+
+### Ver todas as essas métricas
+GET {{baseUrl}}/actuator/metrics/jvm.memory.used
+Accept: {{accept}}
+
+> {%
+  // Armazenar para próximas requisições
+  let stats = {
+    memory: response.body.measurements[0].value / 1048576,
+    timestamp: new Date().toISOString()
+  };
+  client.global.set("lastStats", stats);
+  client.log("✓ Stats capturado: " + JSON.stringify(stats));
+%}
+
+###============================================
+### 📈 MONITOR - Cache Hit Rate
+###============================================
+
+### Calcular Hit Rate (executar após operações com cache)
+GET {{baseUrl}}/actuator/metrics/cache.gets.hit
+Accept: {{accept}}
+
+> {%
+  let hits = 0;
+  let misses = 0;
+
+  if (response.body.measurements && response.body.measurements.length > 0) {
+    hits = response.body.measurements[0].value;
+  }
+
+  // Note: você precisaria fazer outra request para misses
+  // client.global.set("cacheHits", hits);
+  client.log("Cache Hits registrado: " + hits);
+%}
+
+###============================================
+### 🔌 CONNECTIVITY - Ping do Actuator
+###============================================
+GET {{baseUrl}}/actuator
+Accept: {{accept}}
+
+> {%
+  if (response.status === 200) {
+    client.log("✓ Actuator respondendo corretamente");
+    client.log("  Links disponíveis:");
+    Object.keys(response.body._links).forEach(key => {
+      client.log("    - " + key);
+    });
+  }
+%}
+

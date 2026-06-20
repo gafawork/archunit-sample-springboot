@@ -1,0 +1,409 @@
+### Variáveis de Ambiente
+@baseUrl = http://localhost:8080
+@contentType = application/json
+@userId = 1
+
+###============================================
+### 1️⃣ CRIAR NOVO USUÁRIO
+###============================================
+POST {{baseUrl}}/api/v1/users
+Content-Type: {{contentType}}
+
+{
+  "email": "maria.santos@example.com",
+  "firstName": "Maria",
+  "lastName": "Santos",
+  "password": "SecurePass123"
+}
+
+> {%
+  client.global.set("lastUserId", response.body.id);
+%}
+
+###============================================
+### 2️⃣ LISTAR TODOS OS USUÁRIOS
+###============================================
+GET {{baseUrl}}/api/v1/users
+Accept: {{contentType}}
+
+###============================================
+### 3️⃣ OBTER USUÁRIO POR ID
+###============================================
+GET {{baseUrl}}/api/v1/users/{{userId}}
+Accept: {{contentType}}
+
+###============================================
+### 4️⃣ ATUALIZAR USUÁRIO
+###============================================
+PUT {{baseUrl}}/api/v1/users/{{userId}}
+Content-Type: {{contentType}}
+
+{
+  "firstName": "Maria Atualizada",
+  "lastName": "Santos Silva"
+}
+
+###============================================
+### 5️⃣ DELETAR USUÁRIO
+###============================================
+DELETE {{baseUrl}}/api/v1/users/{{userId}}
+
+###============================================
+### 🧪 TESTES DE VALIDAÇÃO
+###============================================
+
+### Teste: Email Inválido
+POST {{baseUrl}}/api/v1/users
+Content-Type: {{contentType}}
+
+{
+  "email": "email-invalido@",
+  "firstName": "Teste",
+  "lastName": "Validação",
+  "password": "Password123"
+}
+
+###
+
+### Teste: Senha muito curta (menos de 8 caracteres)
+POST {{baseUrl}}/api/v1/users
+Content-Type: {{contentType}}
+
+{
+  "email": "teste.curto@example.com",
+  "firstName": "Teste",
+  "lastName": "Senha",
+  "password": "12345"
+}
+
+###
+
+### Teste: firstName vazio
+POST {{baseUrl}}/api/v1/users
+Content-Type: {{contentType}}
+
+{
+  "email": "teste.vazio@example.com",
+  "firstName": "",
+  "lastName": "Teste",
+  "password": "Password123"
+}
+
+###
+
+### Teste: Atualizar usuário inexistente (ID 99999)
+PUT {{baseUrl}}/api/v1/users/99999
+Content-Type: {{contentType}}
+
+{
+  "firstName": "Fictício",
+  "lastName": "Usuário"
+}
+
+###
+
+### Teste: Deletar usuário inexistente
+DELETE {{baseUrl}}/api/v1/users/99999
+
+###
+
+### Teste: Obter usuário inexistente
+GET {{baseUrl}}/api/v1/users/99999
+Accept: {{contentType}}
+
+###============================================
+### 📊 TESTES DE PERFORMANCE (Cache)
+###============================================
+
+### Primeira requisição (sem cache, lê do DB)
+GET {{baseUrl}}/api/v1/users/1
+Accept: {{contentType}}
+
+###
+
+### Segunda requisição (com cache, deve ser mais rápida)
+GET {{baseUrl}}/api/v1/users/1
+Accept: {{contentType}}
+
+###
+
+### Terceira requisição (ainda em cache)
+GET {{baseUrl}}/api/v1/users/1
+Accept: {{contentType}}
+
+###
+
+### Atualizar usuário (invalida o cache)
+PUT {{baseUrl}}/api/v1/users/1
+Content-Type: {{contentType}}
+
+{
+  "firstName": "Nome Atualizado"
+}
+
+###
+
+### Requisição após atualização (sem cache, lê novamente do DB)
+GET {{baseUrl}}/api/v1/users/1
+Accept: {{contentType}}
+
+###============================================
+### 🔗 TESTES DE FLUXO COMPLETO (CRUD)
+###============================================
+
+### 1. Criar usuário
+POST {{baseUrl}}/api/v1/users
+Content-Type: {{contentType}}
+
+{
+  "email": "fluxo.completo@example.com",
+  "firstName": "Fluxo",
+  "lastName": "Completo",
+  "password": "FluxoPassword123"
+}
+
+> {%
+  client.global.set("novoUserId", response.body.id);
+  client.log("Usuário criado com ID: " + response.body.id);
+%}
+
+###
+
+### 2. Listar para confirmar que foi criado
+GET {{baseUrl}}/api/v1/users
+Accept: {{contentType}}
+
+> {%
+  let total = response.body.length;
+  client.log("Total de usuários: " + total);
+%}
+
+###
+
+### 3. Obter o usuário que foi criado
+GET {{baseUrl}}/api/v1/users/{{novoUserId}}
+Accept: {{contentType}}
+
+> {%
+  client.log("Email: " + response.body.email);
+  client.log("Full Name: " + response.body.fullName);
+%}
+
+###
+
+### 4. Atualizar o usuário
+PUT {{baseUrl}}/api/v1/users/{{novoUserId}}
+Content-Type: {{contentType}}
+
+{
+  "firstName": "FluxoAtualizado",
+  "lastName": "CompletoAtualizado"
+}
+
+> {%
+  client.log("Usuário atualizado: " + response.body.fullName);
+%}
+
+###
+
+### 5. Deletar o usuário
+DELETE {{baseUrl}}/api/v1/users/{{novoUserId}}
+
+> {%
+  if (response.status === 204) {
+    client.log("Usuário deletado com sucesso!");
+  }
+%}
+
+###
+
+### 6. Tentar obter usuário deletado (deve retornar 404)
+GET {{baseUrl}}/api/v1/users/{{novoUserId}}
+Accept: {{contentType}}
+
+###============================================
+### 🔐 TESTES DE ERRO
+###============================================
+
+### Teste: Método não suportado
+PATCH {{baseUrl}}/api/v1/users/1
+Content-Type: {{contentType}}
+
+{
+  "firstName": "Test"
+}
+
+###
+
+### Teste: URL pode não existir
+GET {{baseUrl}}/api/v1/users/invalid
+
+###
+
+### Teste: Payload inválido (JSON malformado)
+POST {{baseUrl}}/api/v1/users
+Content-Type: {{contentType}}
+
+{
+  "email": "teste@example.com",
+  "firstName": "Teste"
+  # Missing comma and other fields causes bad request
+}
+
+###
+
+### Teste: Content-Type incorreto
+POST {{baseUrl}}/api/v1/users
+Content-Type: text/plain
+
+email=teste@example.com&firstName=Teste&lastName=User&password=Password123
+
+###============================================
+### 💾 TESTE JSON RESPONSE PARSING
+###============================================
+
+### Criar e fazer parsing da resposta
+POST {{baseUrl}}/api/v1/users
+Content-Type: {{contentType}}
+
+{
+  "email": "json.parser@example.com",
+  "firstName": "Json",
+  "lastName": "Parser",
+  "password": "JsonParser123"
+}
+
+> {%
+  if (response.status === 201) {
+    let userData = response.body;
+    client.log("ID: " + userData.id);
+    client.log("Email: " + userData.email);
+    client.log("Full Name: " + userData.fullName);
+    client.log("Status Ativo: " + userData.active);
+
+    // Salvar para uso posterior
+    client.global.set("parsedUserId", userData.id);
+  }
+%}
+
+###============================================
+### 📈 TESTE DE MÚLTIPLAS REQUISIÇÕES
+###============================================
+
+### Criar usuário #1
+POST {{baseUrl}}/api/v1/users
+Content-Type: {{contentType}}
+
+{
+  "email": "usuario.um@example.com",
+  "firstName": "Usuário",
+  "lastName": "Um",
+  "password": "Password123"
+}
+
+###
+
+### Criar usuário #2
+POST {{baseUrl}}/api/v1/users
+Content-Type: {{contentType}}
+
+{
+  "email": "usuario.dois@example.com",
+  "firstName": "Usuário",
+  "lastName": "Dois",
+  "password": "Password123"
+}
+
+###
+
+### Criar usuário #3
+POST {{baseUrl}}/api/v1/users
+Content-Type: {{contentType}}
+
+{
+  "email": "usuario.tres@example.com",
+  "firstName": "Usuário",
+  "lastName": "Três",
+  "password": "Password123"
+}
+
+###
+
+### Listar todos (deve retornar pelo menos 3)
+GET {{baseUrl}}/api/v1/users
+Accept: {{contentType}}
+
+> {%
+  let usuarios = response.body;
+  client.log("Total de usuários: " + usuarios.length);
+
+  // Log each user
+  usuarios.forEach(function(user) {
+    client.log("- " + user.id + ": " + user.fullName + " (" + user.email + ")");
+  });
+%}
+
+###============================================
+### 🚀 TESTE DE RESPOSTA COM STATUS CODES
+###============================================
+
+### Verificar status 201 (Created)
+POST {{baseUrl}}/api/v1/users
+Content-Type: {{contentType}}
+
+{
+  "email": "status.test@example.com",
+  "firstName": "Status",
+  "lastName": "Test",
+  "password": "StatusTest123"
+}
+
+> {%
+  if (response.status === 201) {
+    client.log("✓ Resposta 201 recebida com sucesso");
+  } else {
+    client.log("✗ Erro: Status " + response.status);
+  }
+%}
+
+###
+
+### Verificar status 200 (OK)
+GET {{baseUrl}}/api/v1/users
+Accept: {{contentType}}
+
+> {%
+  if (response.status === 200) {
+    client.log("✓ Resposta 200 recebida com sucesso");
+  } else {
+    client.log("✗ Erro: Status " + response.status);
+  }
+%}
+
+###
+
+### Verificar status 204 (No Content)
+DELETE {{baseUrl}}/api/v1/users/1
+
+> {%
+  if (response.status === 204) {
+    client.log("✓ Resposta 204 recebida com sucesso");
+  } else {
+    client.log("✗ Erro: Status " + response.status);
+  }
+%}
+
+###
+
+### Verificar status 404 (Not Found)
+GET {{baseUrl}}/api/v1/users/999999
+Accept: {{contentType}}
+
+> {%
+  if (response.status === 404) {
+    client.log("✓ Resposta 404 recebida com sucesso");
+  } else {
+    client.log("✗ Erro: Status " + response.status);
+  }
+%}
+
