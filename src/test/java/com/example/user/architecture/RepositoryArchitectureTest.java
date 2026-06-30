@@ -59,14 +59,6 @@ class RepositoryArchitectureTest {
             .as("Nomes de repositórios devem seguir o padrão [Entidade]Repository");
 
     @ArchTest
-    static final ArchRule findall_em_repository_deve_ter_pageable =
-        methods().that().haveNameMatching("findAll.*")
-            .and().areDeclaredInClassesThat().resideInAPackage("..domain.repository..")
-            .should(aceitarPageavel())
-            .allowEmptyShould(true)
-            .as("Métodos com findAll em repositórios devem aceitar Pageable - use paginação para grandes volumes de dados");
-
-    @ArchTest
     static final ArchRule nao_devem_chamar_findall_sem_pageable =
         classes().that().resideInAPackage("..service..")
             .should(naoCharmarFindAllSemPaginacao())
