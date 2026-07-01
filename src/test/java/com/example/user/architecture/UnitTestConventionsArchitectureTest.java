@@ -39,6 +39,9 @@ class UnitTestConventionsArchitectureTest {
 
     // Anotação de teste parametrizado verificada por nome para não acoplar o classpath ao módulo junit-params.
     private static final String PARAMETERIZED_TEST = "org.junit.jupiter.params.ParameterizedTest";
+    
+    // Anotação de test factory verificada por nome para criar testes dinâmicos.
+    private static final String TEST_FACTORY = "org.junit.jupiter.api.TestFactory";
 
     @ArchTest
     static final ArchRule metodos_de_teste_so_existem_em_classes_de_teste = methods()
@@ -87,10 +90,10 @@ class UnitTestConventionsArchitectureTest {
                     .because("O projeto padroniza o JUnit 5 (Jupiter, 'org.junit.jupiter..'); misturar JUnit 4 fragmenta o ciclo de vida e a descoberta de testes.");
 
     /**
-     * Verifica se a classe possui ao menos um método de teste ({@code @Test} ou {@code @ParameterizedTest}).
+     * Verifica se a classe possui ao menos um método de teste ({@code @Test}, {@code @ParameterizedTest} ou {@code @TestFactory}).
      */
     private static final ArchCondition<JavaClass> CONTER_AO_MENOS_UM_TESTE =
-            new ArchCondition<JavaClass>("conter ao menos um método de teste (@Test ou @ParameterizedTest)") {
+            new ArchCondition<JavaClass>("conter ao menos um método de teste (@Test, @ParameterizedTest ou @TestFactory)") {
                 @Override
                 public void check(JavaClass javaClass, ConditionEvents events) {
                     boolean possuiMetodoDeTeste = javaClass.getMethods().stream()
@@ -106,7 +109,9 @@ class UnitTestConventionsArchitectureTest {
             };
 
     private static boolean ehMetodoDeTeste(JavaMethod method) {
-        return method.isAnnotatedWith(Test.class) || method.isAnnotatedWith(PARAMETERIZED_TEST);
+        return method.isAnnotatedWith(Test.class) 
+            || method.isAnnotatedWith(PARAMETERIZED_TEST)
+            || method.isAnnotatedWith(TEST_FACTORY);
     }
 
     @ArchTest
@@ -116,7 +121,7 @@ class UnitTestConventionsArchitectureTest {
                     .and().resideOutsideOfPackage("..architecture..")
                     .should(CONTER_AO_MENOS_UM_TESTE)
                     .allowEmptyShould(true)
-                    .as("Classes de teste unitário ('*Test') devem conter ao menos um teste (@Test ou @ParameterizedTest)")
+                    .as("Classes de teste unitário ('*Test') devem conter ao menos um teste (@Test, @ParameterizedTest ou @TestFactory)")
                     .because("Uma classe '*Test' sem nenhum teste passa despercebida nos relatórios, dando uma falsa sensação de cobertura. Os testes de arquitetura (pacote '..architecture..') usam @ArchTest e ficam fora deste escopo.");
 
     // Predicado auxiliar reutilizável caso queira inverter regras no futuro.

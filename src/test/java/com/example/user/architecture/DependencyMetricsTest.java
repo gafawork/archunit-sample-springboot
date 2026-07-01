@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 
-public class DependencyMetricsTest {
+class DependencyMetricsTest {
 
     private Set<JavaPackage> getSubpackages() {
         return new ClassFileImporter()
