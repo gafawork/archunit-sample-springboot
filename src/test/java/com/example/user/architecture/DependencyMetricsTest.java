@@ -9,10 +9,17 @@ import org.junit.jupiter.api.Test;
 import java.util.Set;
 
 public class DependencyMetricsTest {
-    final Set<JavaPackage> packages = new ClassFileImporter().importPackages("com.example").getPackage("com.example").getSubpackages();
+
+    private Set<JavaPackage> getSubpackages() {
+        return new ClassFileImporter()
+                .importPackages("com.example")
+                .getPackage("com.example")
+                .getSubpackages();
+    }
 
     @Test
     void cumulativeDependencyMetrics() {
+        final var packages = getSubpackages();
         final var components = MetricsComponents.fromPackages(packages);
         final var metrics = ArchitectureMetrics.lakosMetrics(components);
 
@@ -22,27 +29,31 @@ public class DependencyMetricsTest {
         System.out.println("Normalized Cumulative Component Dependency: " + metrics.getNormalizedCumulativeComponentDependency());
     }
 
-//    @Test
-//    void componentDependencyMetrics() {
-//        final var components = MetricsComponents.fromPackages(packages);
-//        final var metrics = ArchitectureMetrics.componentDependencyMetrics(components);
-//        final var componentIdentifier = "dev.simonverhoeven.archunitdemo.onionmodule";
-//
-//        System.out.println("Efferent Coupling: " + metrics.getEfferentCoupling(componentIdentifier));
-//        System.out.println("Afferent coupling: " + metrics.getAfferentCoupling(componentIdentifier));
-//        System.out.println("Instability: " + metrics.getInstability(componentIdentifier));
-//        System.out.println("Abstractness: " + metrics.getAbstractness(componentIdentifier));
-//        System.out.println("Normalized distance from main sequence: " + metrics.getNormalizedDistanceFromMainSequence(componentIdentifier));
-//    }
-//
-//    @Test
-//    void visibilityMetrics() {
-//        final var components = MetricsComponents.fromPackages(packages);
-//        final var metrics = ArchitectureMetrics.visibilityMetrics(components);
-//        final var componentIdentifier = "dev.simonverhoeven.archunitdemo.onionmodule";
-//
-//        System.out.println("Relative Visibility : " + metrics.getRelativeVisibility(componentIdentifier));
-//        System.out.println("Average Relative Visibility: " + metrics.getAverageRelativeVisibility());
-//        System.out.println("Global Relative Visibility: " + metrics.getGlobalRelativeVisibility());
-//    }
+    @Test
+    void componentDependencyMetrics() {
+        final var packages = getSubpackages();
+        final var components = MetricsComponents.fromPackages(packages);
+        final var metrics = ArchitectureMetrics.componentDependencyMetrics(components);
+
+        packages.stream().findFirst().ifPresent(pkg -> {
+            System.out.println("Efferent Coupling: " + metrics.getEfferentCoupling(pkg.getName()));
+            System.out.println("Afferent coupling: " + metrics.getAfferentCoupling(pkg.getName()));
+            System.out.println("Instability: " + metrics.getInstability(pkg.getName()));
+            System.out.println("Abstractness: " + metrics.getAbstractness(pkg.getName()));
+            System.out.println("Normalized distance from main sequence: " + metrics.getNormalizedDistanceFromMainSequence(pkg.getName()));
+        });
+    }
+
+    @Test
+    void visibilityMetrics() {
+        final var packages = getSubpackages();
+        final var components = MetricsComponents.fromPackages(packages);
+        final var metrics = ArchitectureMetrics.visibilityMetrics(components);
+
+        packages.stream().findFirst().ifPresent(pkg -> {
+            System.out.println("Relative Visibility : " + metrics.getRelativeVisibility(pkg.getName()));
+            System.out.println("Average Relative Visibility: " + metrics.getAverageRelativeVisibility());
+            System.out.println("Global Relative Visibility: " + metrics.getGlobalRelativeVisibility());
+        });
+    }
 }
